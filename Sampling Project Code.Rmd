@@ -1,0 +1,74 @@
+---
+title: "SURV625 Team Sampling Project"
+author: "Team Cochran"
+date: "2023-01-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## SM 625: Week 4 Sampling Project Notes
+
+**For each of the three variables that will be the focus of the final course project, the Department of Education would like to generate estimates of means and proportions having a coefficient of variation of no more than 0.05. Using the numbers provided to you in the description of the final project, compute estimates of the element variances for each variable.**
+
+- **Ever smoked one cigarette (expected proportion = 0.25)**
+- **Ever smoked marijuana (expected proportion = 0.15)**
+- **Age when first approach to smoke cigarettes or marijuana (expected mean = 12, expected SD = 1)**
+
+Notes:
+- Can estimate element variance for a proportion using $\hat{S^2} \approx \hat{p}(1-\hat{p})=\hat{p}*\hat{q}$
+- Standard deviation for a mean: $s=\sqrt{s^2}$
+
+```{r}
+cv <- 0.05
+
+## Ever smoked one cigarette
+p_cig <- 0.25
+(s2_cig <- p_cig*(1-p_cig))
+
+## Ever smoked marijuana
+p_mar <- 0.15
+(s2_mar <- p_mar*(1-p_mar))
+
+## Age when first approached to smoke
+mean_app <- 12
+sd_app <- 1
+(s2_app <- sd_app^2)
+```
+
+
+**Given these estimates, compute the desired level of precision (the desired sampling variance) for each estimate that corresponds to the desired coefficient of variation.**
+
+Notes:
+- $\hat{cv(\bar{y})}=\hat{se(\bar{y})}/\bar{y}$, $\hat{V}=\hat{se(\bar{y})}=\hat{p}*\hat{cv(\bar{y})}$
+
+```{r}
+## Ever smoked one cigarette
+(V2_cig <- (p_cig*cv)^2)
+
+## Ever smoked marijuana
+(V2_mar <- (p_mar*cv)^2)
+
+## Age when first approached to smoke
+(V2_app <- (mean_app*cv)^2)
+```
+
+
+**Now, given the desired levels of precision for each estimate, compute estimates of the necessary sample sizes for each of these three estimates (assuming simple random sampling), ignoring the finite population correction. These will be starting points for the eventual two-stage cluster sample design.**
+
+Notes:
+- Ignoring fpc, $n=\hat{S^2}/\hat{V^2}$
+
+```{r}
+## Ever smoked one cigarette
+(n_cig <- s2_cig/V2_cig)
+
+## Ever smoked marijuana
+(n_mar <- s2_mar/V2_mar)
+
+## Age when first approached to smoke
+(n_app <- s2_app/V2_app)
+```
