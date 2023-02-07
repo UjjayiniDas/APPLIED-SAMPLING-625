@@ -1,0 +1,86 @@
+---
+title: "SURV625 Team Sampling Project"
+author: "Team Cochran"
+date: "2023-02-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## SM 625: Week 5 Sampling Project Notes
+
+From a previous study, you obtain estimates of the following **design effects** for each of
+these three estimates:
+
+* proportion ever smoked one cigarette = 2.5;
+* proportion ever smoked marijuana = 2.0; and
+* mean age when first asked to smoke = 1.7. 
+
+```{r}
+deff_cig <- 2.5
+
+deff_mar <- 2.0
+
+deff_app <- 1.7
+```
+
+This previous study featured a sample of size n = 7,500 students between the ages of 13 and
+19, selected from a total of a = 150 clusters. Using this information, compute a synthetic
+estimate of roh for each of the three variables. These synthetic estimates of roh will be used
+to consider alternative cluster sample designs as you continue with your project work.
+
+Notes: 
+ $$roh = \frac{deff-1}{b-1}$$
+$$f = \frac{a \times b}{A \times B} = \frac{n}{N}$$
+
+```{r}
+#Estimating b from the prior study
+(b_priorstudy <- 7500/150)
+
+#Estimating roh for ever smoked one cigarette
+(roh_cig <- (deff_cig-1)/(b_priorstudy-1))
+
+#Estimating roh for ever smoked marijuana
+(roh_mar <- (deff_mar-1)/(b_priorstudy-1))
+
+#Estimating roh for mean age when first approached to smoke
+(roh_app <- (deff_app-1)/(b_priorstudy-1))
+```
+
+Finally, budget and cost information is now available. The total budget for data collection for
+this project will be \$500,000. The client and the data collection organization estimate that
+the data collection will cost \$3,000 per primary stage cluster (school), and \$50 per
+completed questionnaire within a cluster. We will use this cost information moving forward
+for optimal subsample size calculations.
+
+Notes: 
+$C=500,000$; $C_{0}$=fixed cost (unspecified as of yet); $c_{a}=3,000$; $c_{b}=50$
+$$C - C_{0} = ac_{a}+a(bc_{b})$$
+$$b_{opt}=\sqrt{\frac{c_{a}}{c_{b}} \cdot \frac{1-roh}{roh}}$$
+$$a_{opt}=\frac{C-C_{0}}{c_{a}+b_{opt}c_{b}}$$
+
+```{r}
+#Defining cost/cluster and cost/element
+c_a <- 3000
+c_b <- 50
+C <- 500000
+
+#Estimating optimum subsample size: number of elements within clusters (b)
+(bopt_cig <- sqrt((c_a/c_b)*((1-roh_cig)/(roh_cig))))
+(bopt_mar <- sqrt((c_a/c_b)*((1-roh_mar)/(roh_mar))))
+(bopt_app <- sqrt((c_a/c_b)*((1-roh_app)/(roh_app))))
+
+#Estimating optimum subsample size: number of clusters (a)
+#ASSUMING our fixed costs are 0
+(aopt_cig <- (C-0)/(c_a+(bopt_cig*c_b)))
+(aopt_mar <- (C-0)/(c_a+(bopt_mar*c_b)))
+(aopt_app <- (C-0)/(c_a+(bopt_app*c_b)))
+
+#Estimating optimum subsample size: n
+#ASSUMING our fixed costs are 0
+(nopt_cig <- aopt_cig*bopt_cig)
+(nopt_mar <- aopt_mar*bopt_mar)
+(nopt_app <- aopt_app*bopt_app)
+```
