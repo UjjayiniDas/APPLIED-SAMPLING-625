@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## SM 625: Week 5 Sampling Project Notes
+## SM 625: Week-5 Sampling Project Notes
 
 From a previous study, you obtain estimates of the following **design effects** for each of
 these three estimates:
