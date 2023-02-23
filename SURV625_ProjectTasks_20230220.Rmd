@@ -1,0 +1,244 @@
+---
+title: "SURV625 Team Sampling Project"
+author: "Team Cochran"
+date: "2023-01-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## SM 625: Week 4 Sampling Project Notes
+
+**For each of the three variables that will be the focus of the final course project, the Department of Education would like to generate estimates of means and proportions having a coefficient of variation of no more than 0.05. Using the numbers provided to you in the description of the final project, compute estimates of the element variances for each variable.**
+
+- **Ever smoked one cigarette (expected proportion = 0.25)**
+- **Ever smoked marijuana (expected proportion = 0.15)**
+- **Age when first approach to smoke cigarettes or marijuana (expected mean = 12, expected SD = 1)**
+
+Notes:
+- Can estimate element variance for a proportion using $\hat{S^2} \approx \hat{p}(1-\hat{p})=\hat{p}*\hat{q}$
+- Standard deviation for a mean: $s=\sqrt{s^2}$
+
+```{r}
+cv <- 0.05
+
+## Ever smoked one cigarette
+p_cig <- 0.25
+(s2_cig <- p_cig*(1-p_cig))
+
+## Ever smoked marijuana
+p_mar <- 0.15
+(s2_mar <- p_mar*(1-p_mar))
+
+## Age when first approached to smoke
+mean_app <- 12
+sd_app <- 1
+(s2_app <- sd_app^2)
+```
+
+
+**Given these estimates, compute the desired level of precision (the desired sampling variance) for each estimate that corresponds to the desired coefficient of variation.**
+
+Notes:
+- $\hat{cv(\bar{y})}=\hat{se(\bar{y})}/\bar{y}$, $\hat{V}=\hat{se(\bar{y})}=\hat{p}*\hat{cv(\bar{y})}$
+
+```{r}
+## Ever smoked one cigarette
+(V2_cig <- (p_cig*cv)^2)
+
+## Ever smoked marijuana
+(V2_mar <- (p_mar*cv)^2)
+
+## Age when first approached to smoke
+(V2_app <- (mean_app*cv)^2)
+```
+
+
+**Now, given the desired levels of precision for each estimate, compute estimates of the necessary sample sizes for each of these three estimates (assuming simple random sampling), ignoring the finite population correction. These will be starting points for the eventual two-stage cluster sample design.**
+
+Notes:
+- Ignoring fpc, $n=\hat{S^2}/\hat{V^2}$
+
+```{r}
+## Ever smoked one cigarette
+(n_cig <- s2_cig/V2_cig)
+
+## Ever smoked marijuana
+(n_mar <- s2_mar/V2_mar)
+
+## Age when first approached to smoke
+(n_app <- s2_app/V2_app)
+```
+
+
+## SM 625: Week 5 Sampling Project Notes
+
+**From a previous study, you obtain estimates of the following design effects for each of these three estimates:**
+
+- **proportion ever smoked one cigarette = 2.5;**
+- **proportion ever smoked marijuana = 2.0; and**
+- **mean age when first asked to smoke = 1.7.**
+
+**This previous study featured a sample of size n = 7,500 students between the ages of 13 and 19, selected from a total of a = 150 clusters. Using this information, compute a synthetic estimate of roh for each of the three variables. These synthetic estimates of roh will be used to consider alternative cluster sample designs as you continue with your project work.**
+
+```{r}
+prev_n <- 7500
+prev_a <- 150
+prev_b <- prev_n/prev_a
+
+deff_cig <- 2.5
+deff_mar <- 2.0
+deff_app <- 1.7
+
+## Calculate roh for each variable
+(roh_cig <- (deff_cig-1)/(prev_b-1))
+(roh_mar <- (deff_mar-1)/(prev_b-1))
+(roh_app <- (deff_app-1)/(prev_b-1))
+```
+
+
+**Finally, budget and cost information is now available. The total budget for data collection for this project will be $500,000. The client and the data collection organization estimate that the data collection will cost $3,000 per primary stage cluster (school), and $50 per completed questionnaire within a cluster. We will use this cost information moving forward for optimal subsample size calculations.**
+
+
+## SM 625: Week 6 Sampling Project Notes
+
+**Recall that the client and the data collection organization estimated that the data collection would cost $3,000 per primary stage cluster (school), and $50 per completed questionnaire within a cluster. We will now use this information for optimum subsample size calculations. Recall that the total budget for data collection will be $500,000.**
+
+**Given this cost information and your estimates of roh for the three different variables of primary interest from last week, compute the optimum subsample size (and the corresponding optimal number of first stage clusters, given the total budget above) for each of the variables.**
+
+```{r}
+budget <- 500000
+c_a <- 3000
+c_b <- 50
+
+## Calculate optimum subsample size
+(b_opt_cig <- sqrt((c_a/c_b)*((1-roh_cig)/roh_cig)))
+(b_opt_mar <- sqrt((c_a/c_b)*((1-roh_mar)/roh_mar)))
+(b_opt_app <- sqrt((c_a/c_b)*((1-roh_app)/roh_app)))
+
+## Calculate optimum cluster sample size
+(a_opt_cig <- (budget/(c_a+round(b_opt_cig)*c_b)))
+(a_opt_mar <- (budget/(c_a+round(b_opt_mar)*c_b)))
+(a_opt_app <- (budget/(c_a+round(b_opt_app)*c_b)))
+
+## Calculate optimum n
+(n_opt_cig <- round(b_opt_cig)*round(a_opt_cig))
+(n_opt_mar <- round(b_opt_mar)*round(a_opt_mar))
+(n_opt_app <- round(b_opt_app)*round(a_opt_app))
+
+## Calculate revised cost for optimum subsample and cluster sample sizes
+(revised_cost_cig <- round(a_opt_cig)*c_a+round(a_opt_cig)*(round(b_opt_cig)*c_b))
+(revised_cost_mar <- round(a_opt_mar)*c_a+round(a_opt_mar)*(round(b_opt_mar)*c_b))
+(revised_cost_app <- round(a_opt_app)*c_a+round(a_opt_app)*(round(b_opt_app)*c_b))
+```
+
+
+**How will you decide on a single overall optimum subsample size to use in your design? Think about a comparison of alternative cluster sample designs: under a fixed cost constraint, how would we decide which design would be best? What will be your overall sample size (n) under this new optimum subsample size? As you make progress in writing up what you have done so far, provide some discussion of the rationale for your choices in this regard.**
+
+```{r}
+## Chose optimum a and b from cig because it has the highest roh
+(b_opt <- round(b_opt_cig))
+(a_opt <- round(a_opt_cig))
+
+(n <- round(b_opt*a_opt))
+```
+
+
+**Next, given this optimum subsample size and treating the values of roh as portable, compute the new expected DEFF for each estimate given the new design (this can be specific to each variable / estimate, given the different optimum subsample sizes). In addition, compute a new expected SRS variance for each variable under the new design, using the new “optimum” overall sample size (remember that you can treat the element variances for each variable estimated last week as portable). Finally, compute the new expected sampling variance for each estimate under this new cluster sample design. Are you still meeting the client’s precision requirements?**
+
+```{r}
+## New expected DEFF for each estimate using specific b_opt
+#(exp_deff_cig <- 1+(round(b_opt_cig)-1)*roh_cig)
+#(exp_deff_mar <- 1+(round(b_opt_mar)-1)*roh_mar)
+#(exp_deff_app <- 1+(round(b_opt_app)-1)*roh_app)
+
+## New expected DEFF for each estimate using chosen b_opt
+(exp_deff_cig <- 1+(b_opt-1)*roh_cig)
+(exp_deff_mar <- 1+(b_opt-1)*roh_mar)
+(exp_deff_app <- 1+(b_opt-1)*roh_app)
+
+## New expected SRS variance
+(var_srs_cig <- s2_cig/n)
+(var_srs_mar <- s2_mar/n)
+(var_srs_app <- s2_app/n)
+
+## New expected sampling variance
+(exp_var_cig <- exp_deff_cig*var_srs_cig)
+(exp_var_mar <- exp_deff_mar*var_srs_mar)
+(exp_var_app <- exp_deff_app*var_srs_app)
+
+## Compare expected sampling variance to client's precision requirements
+exp_var_cig<=V2_cig
+exp_var_mar<=V2_mar
+exp_var_app<=V2_app
+```
+
+
+**The client has also provided other new information: the estimated size of the target population is N = 830,138. Given this population size and your overall sample size (n) under the new optimum subsample size computed above, what is your overall working sampling fraction (f)? Does it seem like finite population corrections will be necessary in your sampling variances if you choose to perform SRSWOR at some point?**
+
+```{r}
+N <- 830138
+(f <- n/N)
+
+## Expected sample size with and without fpc
+(exp_n_fpc_cig <- s2_cig/(V2_cig+(s2_cig/N)))
+(exp_n_wofpc_cig <- s2_cig/V2_cig)
+
+(exp_n_fpc_mar <- s2_mar/(V2_mar+(s2_mar/N)))
+(exp_n_wofpc_mar <- s2_mar/V2_mar)
+
+(exp_n_fpc_app <- s2_app/(V2_app+(s2_app/N)))
+(exp_n_wofpc_app <- s2_app/V2_app)
+```
+
+
+**The tables that you are developing and the text that accompanies them should carefully reflect the answers to all of the questions above.**
+
+
+## SM 625: Week 7 Sampling Project Notes
+
+**For this week, we will consider the information available for stratified sampling of students. Eventually you are going to design a stratified cluster sample of students, where the clusters (or PSUs) are schools, but we aren’t there yet.**
+
+**Recall the regions of interest in the sampling project description:**
+
+**As “State officials are interested in providing, if at all possible, separate estimates for each of nine education regions in the state, where the regions are defined by groups of counties”, we will use these nine regions as strata.**
+
+**Prepare a table that includes the overall population counts in each of these nine strata (the total count of students in the target population at each school is in the tot_all column on the sampling frame). Given these counts and your working overall sample size (given your working b_opt and a_opt calculations), what is the proportionate allocation of that sample of students across these nine strata?**
+
+```{r}
+library(readxl)
+library(tidyverse)
+
+frame <- read_excel("C:/Users/megan/Google Drive/JPSM/SURV625 - Applied Sampling/Project/MI_school_frame_head_counts.xls")
+
+head(frame)
+summary(frame)
+```
+
+```{r}
+## Overall population counts in each strata
+counts <- frame %>%
+  group_by(Region) %>%
+  summarize(N_h=sum(tot_all))
+
+## Proportionate allocation
+counts$W_h <- counts$N_h/sum(counts$N_h)
+counts$prop_n_h_exact <- n*counts$W_h
+
+## Round n_h values to whole numbers
+counts$prop_n_h <- round(counts$prop_n_h_exact)
+sum(counts$prop_n_h)
+n
+
+## Adjust values to sum to n
+## Round up value closest to .5
+counts[counts$Region==3,"prop_n_h"] <- 45
+sum(counts$prop_n_h)
+n
+
+counts
+```
+
