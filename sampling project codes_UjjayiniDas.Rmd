@@ -1,0 +1,383 @@
+---
+title: "Sampling Project 625"
+author: "Ujjayini Das"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,options(scipen = 999), message= FALSE, warning = FALSE)
+library(dplyr)
+library(tidyverse)
+```
+
+## Week 4 Task
+
+```{r}
+## Function to calculate sample size for proportions
+samplesize_prop <- function(p_hat){
+  cv = 0.05
+  v_hat <- p_hat * cv
+s_sq <- p_hat*(1-p_hat)
+n <- s_sq/(v_hat^2)
+n
+}
+p_s <- samplesize_prop(c(0.25,0.15))
+
+## Function to calculate sample size for means
+samplesize_mean <- function(m,s){
+  cv <- 0.05
+  v_hat <- cv * m
+  n <- s^2/v_hat^2
+  n
+}
+m_s <- samplesize_mean(12,1)
+```
+
+- Sample size for `ever smoked a cigarette` is `r round(p_s[1],0)`, for `ever smoked a marijuana` is `r round(p_s[2],0)` and for `age at smoking cigarette or marijuana` is `r round(m_s,0)`.
+
+## Week 5 Task
+
+```{r}
+
+## Function to calculate roh and optimum subsample size
+roh_calc <- function(n,a,deff){
+  b <- n/a
+roh <- (deff-1)/(b-1)
+roh
+}
+
+b_opt_calc <- function(c_a,c_b,roh){
+  b_opt <- sqrt((c_a/c_b)*((1-roh)/roh))
+  b_opt
+}
+
+roh_new <- roh_calc(7500,150,c(2.5,2.0,1.7))
+b_opt_sol <- b_opt_calc(3000,50,roh_new)
+
+# roh
+roh_new
+# optimum subsample size
+round(b_opt_sol,0)
+```
+
+- The optimum subsample size for `ever smoked a cigarette` is `r round(b_opt_sol[1],0)`, for `ever smoked a marijuana` is `r round(b_opt_sol[2],0)` and for `age at smoking cigarette or marijuana` is `r round(b_opt_sol[3],0)`.
+
+## Week 6 Task
+
+```{r}
+# optimum first stage cluster size
+a_opt_calc <- function(c,c_a,c_b,b_opt){
+  a_opt <- c/(c_a+ (b_opt*c_b))
+  a_opt
+}
+
+a_opt_sol <- a_opt_calc(500000,3000,50,b_opt_sol)
+n_opt_sol <- round(a_opt_sol,0)*round(b_opt_sol,0)
+```
+
+- The optimum first stage cluster size for `ever smoked a cigarette` is `r round(a_opt_sol[1],0)`, for `ever smoked a marijuana` is `r round(a_opt_sol[2],0)` and for `age at smoking cigarette or marijuana` is `r round(a_opt_sol[3],0)`.
+
+To decide on a **single** optimum subsample size for the design, we try to look at the average design effect for the proposed design based on different `b_opt` values.The goal is to choose the `b_opt` for which we have the lowest average design effect. 
+
+```{r}
+# Revised cost calculation
+cost_opt_sol <- round(a_opt_sol,0)*3000 + round(b_opt_sol,0)*round(a_opt_sol,0)*50
+# New precision calculation
+# Expected DEFF based on specific b_opt values for each variable
+deff_new <- 1+(b_opt_sol-1)*roh_new
+deff_all <- matrix(,nrow=3,ncol=3)
+for(i in 1:3){
+deff_all[i,] <- 1+(b_opt_sol[i]-1)*roh_new
+}
+deff_all <- as.data.frame(t(deff_all))
+colnames(deff_all) <- c("b_cigarette","b_marijuana","b_age")
+deff_all[4,] <- c(mean(deff_all[,1]),mean(deff_all[,2]),mean(deff_all[,3]))
+rownames(deff_all) <- c("deff_cig","deff_marijuana","deff_age","avg_deff")
+
+# picking b_opt = b_opt_cig = 44 as our working b_opt
+b_opt <- round(b_opt_sol[1],0) #44
+a_opt <- round(500000/(3000+ (b_opt*50)),0) #96
+n_opt <- a_opt*b_opt #4224
+cost_opt <- a_opt*3000 + (a_opt*b_opt*50) #499200
+deff_new_opt <- 1+(b_opt-1)*roh_new
+
+# New expected SRS Variance
+ele_var <- c(0.1875,0.1275,1)
+var_SRS_new <- ele_var/n_opt
+#New expected cluster variance (using chosen b_opt = 44)
+var_cluster_new <- deff_new_opt*var_SRS_new
+# Precision checking
+mean_estimates <- c(0.25,0.15,12)
+cv_new <- sqrt(var_cluster_new)/mean_estimates
+```
+
+- The optimum sample size for the new SRS design will be `r round(n_opt,0)`.
+
+- Still meeting client's precision because cv of the estimates are `r round(cv_new[1],2)`,`r round(cv_new[2],2)`, `r round(cv_new[3],2)`.
+
+```{r}
+# Sampling fraction
+N <- 830138
+f <- n_opt/N
+```
+
+- can neglect sampling fraction because `r round(f,4)` is fairly small.
+
+### Putting all the information together
+
+```{r}
+# results <- read.csv("C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/Results Summary.csv")
+# View(results)
+```
+
+## Week 7 Task
+
+### Calculating totals for 9 regions i.e. `strata`
+
+```{r warning=FALSE, message=FALSE}
+library(readxl)
+school_frame <- read_excel("C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/MI_school_frame_head_counts.xlsx")
+school_frame <- as_tibble(school_frame)
+
+stratified_frame <- school_frame %>%
+  group_by(Region) %>%
+  summarise(N_h = sum(tot_all))
+
+# Taking n = n_opt = 4268
+stratified_prop_frame <- stratified_frame %>%
+  mutate(W_h = N_h/N,
+         n_h = round(n_opt*W_h,0))
+stratified_prop_frame$n_h[6] <- stratified_prop_frame$n_h[6]-1 #rounding down to match the counts to total n
+```
+
+## Week 8 task
+
+## Allocating clusters proportionate to number of students in each stratum in the population
+
+```{r warning=FALSE}
+# Number of clusters
+stratified_prop_frame<- stratified_prop_frame%>%
+  mutate(a_h_exact = a_opt*W_h,
+         a_h = round(a_opt*W_h,0),
+         a_h_rounded = round(a_opt*W_h,0))
+stratified_prop_frame$a_h[1] <- stratified_prop_frame$a_h[1]+1
+stratified_prop_frame$a_h[7] <- stratified_prop_frame$a_h[7]-1
+```
+
+```{r warning=FALSE, message=FALSE}
+# sampling the schools using SRS
+test <- school_frame%>%
+  group_by(Region)%>%
+  count()
+# selecting BCODE numbers using SRS
+set.seed(1489) #Row 4 Column 1-4
+s <- vector(mode = "list", length = 9)
+for(i in 1:9){
+  s[[i]] <- sample(subset(school_frame,school_frame$Region == i)$BCODE, size=stratified_prop_frame$a_h[i])
+  s}
+# subsetting the frame for each stratum
+r <- vector(mode = "list", length = 9)
+for(i in 1:9){
+  r[[i]] <- school_frame[school_frame$BCODE %in% s[[i]],]
+  r
+}
+# summarizing
+library(xlsx)
+#write.xlsx(r[[9]],"C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/sample of schools.xlsx", sheetName = "Sheet9", append=TRUE)
+
+# final sample of schools
+school_sample_SRS <- read.xlsx("C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/sample of schools.xlsx", sheetName = "Sheet1")
+```
+
+
+## Week 9 Task
+
+To extend the framework for stratified PPeS, we group the schools based on their grade levels (middle school, high school) status because that status seems correlated with the three outcome variables of interest i.e. cigarette smoking, marijuana and age. Students from high schools are likely to be exposed to smoking more compared to the students in  school, given their age.
+
+```{r warning=FALSE, message=FALSE}
+## Stratified PPeS
+## sorting using grade level
+school_frame1 <- school_frame
+dummy_data <- read_excel("C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/MI_school_frame_head_counts_dummy.xlsx")
+school_frame1$grade_sum <- dummy_data$grade_sum
+school_frame1$grade_level <- ifelse(school_frame1$grade_sum == 0, "mid", "high")
+school_frame$grade_level <- school_frame1$grade_level
+school_frame <- school_frame%>%
+  mutate(ID = 1:n())%>%
+  group_by(Region)%>%
+  mutate(cum_MOS = cumsum(tot_all))
+ppes <- school_frame%>%
+   mutate(ID = 1:n())%>%
+  group_by(Region,grade_level,.add = TRUE)
+ 
+## computing zone size for each stratum
+zonesize_strata <- stratified_prop_frame$N_h/stratified_prop_frame$a_h
+## generating random starts for each stratum
+rs <- c(rep(0,9))
+set.seed(1234)
+for(i in 1:9){
+  rs[i] <- round(runif(1,min=0, max=zonesize_strata[i]),3)
+  rs
+}
+## cumulative MOS (might report the frame to show the cumulative MOS values)
+subsets <- vector("list",length = 9)
+cm <- vector("list", length = 9)
+for(i in 1:9){
+  subsets[[i]] <- subset(ppes,ppes$Region==i)
+  cm[[i]][1] <- subsets[[i]]$tot_all[1]
+  for(j in 2:test$n[i]){
+    cm[[i]][j] <- cm[[i]][j-1]+subsets[[i]]$tot_all[j]
+    cm
+  }
+}
+ppes$cum_MOS <- unlist(cm)
+
+## selection of schools
+
+## ppes in one stratum
+ppes_stratum_selection <- function (r, sizes, n) 
+{
+    N <- length(sizes)
+    cumsizes <- cumsum(sizes)
+    totsize <- cumsizes[N]
+    int <- totsize/n
+    s <- numeric(n)
+    i <- 1
+    for (j in 1:n) {
+        u <- r + (j - 1) * int
+        while (cumsizes[i] < u) {
+            i <- i + 1
+        }
+        s[j] <- i
+    }
+    s
+}
+
+## ppes for all strata
+
+ppes_sample_selection <- function (r, sizes, stratum, n) 
+{
+    H <- length(n)
+    Nh <- as.vector(table(stratum))
+    s <- ppes_stratum_selection(r[1], sizes[1:Nh[1]], n[1])
+    stratstart <- 1 + Nh[1]
+    if (H > 1) 
+        for (h in 2:H) {
+            stratend <- stratstart + Nh[h] - 1
+            tmp <- ppes_stratum_selection(r[h],sizes[stratstart:stratend], n[h]) + stratstart - 
+                1
+            s <- c(s, tmp)
+            stratstart <- stratend + 1
+        }
+    s
+}
+
+sampleID <- ppes_sample_selection(rs, ppes$tot_all, ppes$Region, stratified_prop_frame$a_h)
+
+## PPeS sample of schools
+
+school_frame_PPES <- ppes[ppes$ID %in% sampleID,]
+school_frame_PPES$times_occurred <- as.vector(table(sampleID)) 
+school_frame_PPES <- as.data.frame(school_frame_PPES)
+
+library(xlsx)
+# write.xlsx(school_frame_PPES, "C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/PPES_frame.xlsx")
+```
+
+## Week 10 task
+
+### a) stratum wise subsample size to maintain epsem
+
+- The sampling fraction for $h^{th}$ stratum is $f_h = \frac{a_h b_h^*}{\sum_{\alpha = 1}^{A_h} MOS_{\alpha}}$. We are considering `tot_all` as MOS for our purpose.
+- To maintain epsem, $f_h = f$ , $\forall h = 1(1)9$. This implies $b_h^* = f \times \frac{\sum_{\alpha = 1}^{A_h} MOS_{h \alpha}}{a_h}$.
+
+```{r}
+stratified_prop_frame <- stratified_prop_frame%>%
+  mutate(targeted_b_h = f*(N_h/a_h),
+         rounded_targeted_b_h = round(targeted_b_h,0))
+```
+
+### b) Checking minimum sufficient size for the selected schools
+
+```{r}
+school_frame_PPES <- read.xlsx("C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/PPES_frame.xlsx", sheetName = "Sheet1")
+```
+
+- One of the selected schools is undersized itself (i.e. having a total student of size 24 which is less than the targeted subsample size for that school). Even for some of the selected schools, the subsequent school on the list was undersized. So, we needed to perform linking, Since the frame is quite large, we linked after selection. The linked frame with the MOS after linking is presented below.
+
+```{r}
+school_frame_PPES_linked <- read.xlsx("C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/PPES_frame_linked.xlsx", sheetName = "Sheet1")
+```
+
+### c) Subsampling
+
+- Now that we have our targeted subsample size within each school, we can send officials to the schools to collect the total number of students enrolled from the current register maintained by each school. Or, alternatively, we can refer to a comparatively recent survey that can give us the actual size of the schools selected. 
+
+```{r}
+## first stage sampling rate f_a, second stage sampling rate f_b
+school_frame_PPES_linked$a_h <- c(stratified_prop_frame$a_h[1],stratified_prop_frame$a_h[2],stratified_prop_frame$a_h[3],stratified_prop_frame$a_h[4],rep(stratified_prop_frame$a_h[5],stratified_prop_frame$a_h[5]),rep(stratified_prop_frame$a_h[6],stratified_prop_frame$a_h[6]),rep(stratified_prop_frame$a_h[7],stratified_prop_frame$a_h[7]),rep(stratified_prop_frame$a_h[8],stratified_prop_frame$a_h[8]),rep(stratified_prop_frame$a_h[9],stratified_prop_frame$a_h[9]))
+school_frame_PPES_linked$MOS_sum <- c(stratified_prop_frame$N_h[1],stratified_prop_frame$N_h[2],stratified_prop_frame$N_h[3],stratified_prop_frame$N_h[4],rep(stratified_prop_frame$N_h[5],stratified_prop_frame$a_h[5]),rep(stratified_prop_frame$N_h[6],stratified_prop_frame$a_h[6]),rep(stratified_prop_frame$N_h[7],stratified_prop_frame$a_h[7]),rep(stratified_prop_frame$N_h[8],stratified_prop_frame$a_h[8]),rep(stratified_prop_frame$N_h[9],stratified_prop_frame$a_h[9]))
+
+school_frame_PPES_linked <- school_frame_PPES_linked%>%
+  mutate(f_a = a_h*linked_MOS/MOS_sum,
+         f_b = b_h_star/linked_MOS,
+         f_overall = f_a*f_b)
+
+```
+
+- We can do a systematic sampling within each school with a fractional interval (taking up to 4 decimal places for sampling interval which is inverse of the specified second stage rate) after obtaining the current roster of students and sorting the list by some appropriate auxiliary information available in the list (correlated to the outcome variable of interest, for example, family background information of individual students like SES, family income, neighborhood of residency etc). In case of absence of any relevant auxiliary variable, we can assume that the roster is randomly distributed within each school and then we can draw a simple random sample of students without replacement(ultimate cluster concept). 
+
+### d) Overall Sampling fraction and inclusion probability
+
+```{r}
+# overall sampling fraction
+stratified_prop_frame <- stratified_prop_frame%>%
+  mutate(f_h = (a_h*targeted_b_h)/N_h) ## epsem because f_h = f for all h
+# Inclusion Probability
+school_frame_PPES_linked$f_b
+
+## write.xlsx(school_frame_PPES_linked,"C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/PPES_frame_linked_w_sampling_fractions.xlsx", sheetName = "Sheet1")
+```
+
+## Week 11 Task
+
+```{r}
+#Actual Roster of AppleStamp Middle School
+applestamp <- read.xlsx("C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/sample_school_student_list.xls", sheetName = "Sheet2")
+applestamp_summary <- applestamp%>%
+  group_by(Grade, Teacher, .add = TRUE)%>%
+  count()
+n_applestamp <- sum(applestamp_summary$n)
+```
+
+- The MOS of this school was 242 but the actual size of the school is `r n_applestamp`. 
+
+```{r}
+# revised subsampling rate based on actual size
+f_b_applestamp <- stratified_prop_frame$targeted_b_h[7]/242
+# actual number of students to be selected 
+x_applestamp_7 <- round(n_applestamp*f_b_applestamp,0)
+```
+
+```{r}
+## sampling 42 students from Applestamp Middle school; systematic sorted by grade, do teachers matter?
+k_applestamp <- round(n_applestamp/x_applestamp_7,4)
+## random start at 24569 column 1-5 row 9 Kish Appendix D, pg 623
+rs_applestamp <- c(rep(0,x_applestamp_7))
+for(i in 2:42){
+  rs_applestamp[1] <- 24569
+  rs_applestamp[i] <- rs_applestamp[i-1] + k_applestamp*10000
+  rs_applestamp
+}
+units_applestamp <- trunc(rs_applestamp/10000)
+# adding ID to students for selection
+applestamp <- applestamp%>%
+  mutate(ID = 1:n())
+# sample of students
+sample_applestamp <- applestamp%>%
+  filter(ID %in% units_applestamp)
+# sample_applestamp (will go in appendix)
+## write.xlsx(sample_applestamp,"C:/Users/USER PC/Dropbox/PhD Year 1 Course Materials/Spring 2023 PhD Courses/SURV625 Applied Sampling/SAMPLING PROJECT/Applestamp_sample_student.xlsx", sheetName = "Sheet1")
+```
+
