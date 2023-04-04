@@ -1,6 +1,6 @@
 ---
 title: "Sampling Project 625"
-author: "Ujjayini Das"
+author: "Team Cochran"
 date: "`r Sys.Date()`"
 output: pdf_document
 ---
