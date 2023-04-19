@@ -372,7 +372,6 @@ sample_applestamp <- applestamp%>%
 
 ```{r}
 ## Estimation Plan for 20% Subclass
-expected_estimates <- c(0.25,0.15,12)
 n_sub <- n_opt*0.2
 a_opt_sub <- a_opt
 b_opt_sub <- n_sub/a_opt_sub
@@ -381,8 +380,8 @@ var_SRS_sub <- ele_var/n_sub
 var_cluster_sub <- var_SRS_sub*deff_sub
 se_sub <- sqrt(var_cluster_sub)
 # Expected 95% CI for subclass
-ci_low_sub <- expected_estimates-(qt(0.975,5)*se_sub)
-ci_upp_sub <- expected_estimates+(qt(0.975,5)*se_sub)
+ci_low_sub <- mean_estimates-(qt(0.975,5)*se_sub)
+ci_upp_sub <- mean_estimates+(qt(0.975,5)*se_sub)
 ci_sub <- rbind(ci_low_sub,ci_upp_sub)
 colnames(ci_sub) <- c("Cigarette smoking prevalence","Marijuana smoking prevalence","Mean age when first approached smoking")
 rownames(ci_sub) <- c("Lower Limit","Upper Limit")
@@ -391,8 +390,8 @@ cv_sub <- se_sub/expected_estimates
 
 ## Expected 95% CI for entire sample
 se_sample <- sqrt(var_cluster_new)
-ci_low <- expected_estimates-(qt(0.975,5)*se_sample)
-ci_upp <- expected_estimates+(qt(0.975,5)*se_sample)
+ci_low <- mean_estimates-(qt(0.975,5)*se_sample)
+ci_upp <- mean_estimates+(qt(0.975,5)*se_sample)
 ci <- rbind(ci_low,ci_upp)
 colnames(ci) <- c("Cigarette smoking prevalence","Marijuana smoking prevalence","Mean age when first approached smoking")
 rownames(ci) <- c("Lower Limit","Upper Limit")
